@@ -13,6 +13,7 @@ import userRoutes from './routes/user.routes';
 import authRoutes from './routes/auth.routes';
 import s3Routes from './routes/s3.routes';
 import documentRoutes from './routes/document.routes';
+import chatRoutes from './routes/chat.routes';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import { AdminSeeder } from './middleware/admin-seeder.middleware';
 
@@ -46,6 +47,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/s3', s3Routes);
 app.use('/api/documents', documentRoutes);
+app.use('/api/chats', chatRoutes);
 
 // 404 handler for undefined routes
 app.use(notFoundHandler);

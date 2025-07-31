@@ -1,98 +1,165 @@
 import { openaiClient } from '../config/openai';
 
-const OPENAI_API_ENDPOINT = "https://api.openai.com/v1/chat/completions";
+export interface LLMResponse {
+  answer: string;
+  tokensUsed: {
+    prompt: number;
+    completion: number;
+    total: number;
+  };
+  model: string;
+  finishReason: string;
+}
+
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
 
 /**
- * LLMService - Service to generate responses using OpenAI API
- * Direct TypeScript equivalent of the JavaScript LLMService class
+ * LLMService - Service to generate responses using OpenAI API for RAG (Retrieval Augmented Generation)
  */
 export class LLMService {
-  private readonly modelName: string;
-  private readonly apiKey: string;
+  private readonly model: string;
+  private readonly maxTokens: number;
+  private readonly temperature: number;
 
   /**
    * Initialize the LLMService
-   * @param modelName - OpenAI model name (default: "gpt-4-turbo")
+   * @param model - OpenAI model name (default: "gpt-3.5-turbo")
+   * @param maxTokens - Maximum tokens for response
+   * @param temperature - Temperature for response generation
    */
-  constructor(modelName: string = "gpt-4-turbo") {
-    this.modelName = modelName;
-    this.apiKey = process.env.OPENAI_API_KEY || '';
-    
-    if (!this.apiKey) {
-      throw new Error("OPENAI_API_KEY environment variable is required");
+  constructor(
+    model: string = 'gpt-3.5-turbo',
+    maxTokens: number = 1000,
+    temperature: number = 0.7
+  ) {
+    this.model = model;
+    this.maxTokens = maxTokens;
+    this.temperature = temperature;
+
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY environment variable is required');
     }
   }
 
   /**
-   * Generate response from OpenAI API
+   * Generate a response using the LLM with provided context from RAG
+   * @param query - User's query
+   * @param context - Context from vector search results
+   * @param chatHistory - Previous chat messages (optional)
+   * @returns LLM response with metadata
+   */
+  async generateResponse(
+    query: string,
+    context: string,
+    chatHistory: ChatMessage[] = []
+  ): Promise<LLMResponse> {
+    try {
+      // Prepare messages for the chat completion
+      const messages: ChatMessage[] = [
+        {
+          role: 'system',
+          content: `You are a helpful AI assistant that answers questions based on provided context. 
+          Use the following context to answer the user's question. If the context doesn't contain 
+          enough information to answer the question, say so clearly. Be concise but comprehensive.
+          
+          Context: ${context}`
+        },
+        ...chatHistory,
+        {
+          role: 'user',
+          content: query
+        }
+      ];
+
+      const response = await openaiClient.chat.completions.create({
+        model: this.model,
+        messages: messages,
+        max_tokens: this.maxTokens,
+        temperature: this.temperature,
+        stream: false,
+      });
+
+      const choice = response.choices[0];
+      
+      return {
+        answer: choice.message?.content || 'No response generated',
+        tokensUsed: {
+          prompt: response.usage?.prompt_tokens || 0,
+          completion: response.usage?.completion_tokens || 0,
+          total: response.usage?.total_tokens || 0,
+        },
+        model: this.model,
+        finishReason: choice.finish_reason || 'unknown',
+      };
+
+    } catch (error: any) {
+      console.error('Error generating LLM response:', error);
+      throw new Error(`Failed to generate LLM response: ${error.message}`);
+    }
+  }
+
+  /**
+   * Generate a title for a chat based on the query
+   * @param query - User's query
+   * @returns Generated title
+   */
+  async generateChatTitle(query: string): Promise<string> {
+    try {
+      const response = await openaiClient.chat.completions.create({
+        model: this.model,
+        messages: [
+          {
+            role: 'system',
+            content: 'Generate a short, descriptive title (max 50 characters) for a chat conversation based on the user\'s question. Be concise and capture the main topic.'
+          },
+          {
+            role: 'user',
+            content: query
+          }
+        ],
+        max_tokens: 20,
+        temperature: 0.3,
+      });
+
+      const title = response.choices[0].message?.content || 'New Chat';
+      return title.length > 50 ? title.substring(0, 47) + '...' : title;
+
+    } catch (error: any) {
+      console.error('Error generating chat title:', error);
+      // Fallback: create title from first few words of query
+      const words = query.split(' ').slice(0, 6).join(' ');
+      return words.length > 50 ? words.substring(0, 47) + '...' : words;
+    }
+  }
+
+  /**
+   * Legacy method for backward compatibility
    * @param prompt - The prompt to send to the model
    * @param stream - Whether to stream the response (default: false)
-   * @returns Promise containing response string or stream generator
-   * @throws Error - If response generation fails
+   * @returns Promise containing response string
+   * @deprecated Use generateResponse with context instead
    */
-  async generateResponse(prompt: string, stream: boolean = false): Promise<string | AsyncGenerator<string>> {
-    const payload = {
-      model: this.modelName,
-      messages: [
-        {
-          role: "user" as const,
-          content: prompt
-        }
-      ],
-      stream: stream,
-      max_tokens: 1000,
-      temperature: 0.7
-    };
-
-    if (stream) {
-      return this._handleStreamingResponse(payload);
-    } else {
-      return this._handleNonStreamingResponse(payload);
-    }
-  }
-
-  /**
-   * Handle streaming response from OpenAI API
-   * @param payload - Request payload
-   * @returns Stream generator
-   * @private
-   */
-  private async* _handleStreamingResponse(payload: any): AsyncGenerator<string> {
+  async generateLegacyResponse(prompt: string, stream: boolean = false): Promise<string> {
     try {
-      const stream = await openaiClient.chat.completions.create({
-        ...payload,
-        stream: true
-      }) as any;
+      const response = await openaiClient.chat.completions.create({
+        model: this.model,
+        messages: [
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        max_tokens: this.maxTokens,
+        temperature: this.temperature,
+        stream: false
+      });
 
-      for await (const chunk of stream) {
-        const delta = chunk.choices[0]?.delta;
-        if (delta?.content) {
-          yield delta.content;
-        }
-      }
+      return response.choices[0].message?.content || '';
     } catch (error: any) {
-      console.error(`Error in streaming response: ${error.message}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Handle non-streaming response from OpenAI API
-   * @param payload - Request payload
-   * @returns Promise containing response content
-   * @private
-   */
-  private async _handleNonStreamingResponse(payload: any): Promise<string> {
-    try {
-      const response = await openaiClient.chat.completions.create(payload);
-      
-      if (response.choices && response.choices.length > 0) {
-        return response.choices[0].message.content || '';
-      } else {
-        throw new Error("No response received from OpenAI API");
-      }
-    } catch (error: any) {
-      console.error(`Error in non-streaming response: ${error.message}`);
+      console.error(`Error in legacy response: ${error.message}`);
       throw error;
     }
   }

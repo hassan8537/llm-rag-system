@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "motor-backend-auth-api",
 		"name": "Motor Backend Auth API",
-		"description": "Complete API collection for Motor Backend with authentication, S3 file management, and PDF document processing with embeddings",
+		"description": "Complete API collection for Motor Backend with authentication, S3 file management, PDF document processing with embeddings, and chat management",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"variable": [
@@ -28,6 +28,11 @@
 		},
 		{
 			"key": "documentId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "chatId",
 			"value": "",
 			"type": "string"
 		}
@@ -1147,6 +1152,449 @@
 				}
 			],
 			"description": "Document processing and management endpoints - processes PDF files, extracts text page-by-page, creates embeddings, and stores them efficiently without document-level text duplication"
+		},
+		{
+			"name": "Chat Management (RAG-Enabled)",
+			"item": [
+				{
+					"name": "Create New Chat with Query",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Chat created with RAG response', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data).to.have.property('chat');",
+									"    pm.expect(response.data).to.have.property('message');",
+									"    pm.expect(response.data.chat).to.have.property('id');",
+									"    pm.expect(response.data.chat).to.have.property('title');",
+									"    pm.expect(response.data.message).to.have.property('role', 'assistant');",
+									"});",
+									"",
+									"// Save chat ID for other tests",
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data.chat.id) {",
+									"        pm.collectionVariables.set('chatId', response.data.chat.id);",
+									"        console.log('✅ Chat ID saved:', response.data.chat.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"query\": \"What are the key features mentioned in the uploaded documents?\",\n    \"title\": \"RAG Chat - {{$timestamp}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/chats",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"chats"
+							]
+						},
+						"description": "Create a new chat with initial query (RAG-enabled). Requires documents to be uploaded first."
+					},
+					"response": []
+				},
+				{
+					"name": "Send Query to Existing Chat",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Query processed with RAG response', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data).to.have.property('userMessage');",
+									"    pm.expect(response.data).to.have.property('assistantMessage');",
+									"    pm.expect(response.data).to.have.property('context');",
+									"    pm.expect(response.data.userMessage).to.have.property('role', 'user');",
+									"    pm.expect(response.data.assistantMessage).to.have.property('role', 'assistant');",
+									"    pm.expect(response.data.context).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"query\": \"Can you provide more details about the specific requirements mentioned?\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/chats/{{chatId}}/query",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"chats",
+								"{{chatId}}",
+								"query"
+							]
+						},
+						"description": "Send a query to an existing chat using RAG (Retrieval Augmented Generation)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Chats with Messages",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Chats list retrieved with messages', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data).to.have.property('chats');",
+									"    pm.expect(response.data).to.have.property('count');",
+									"    pm.expect(response.data.chats).to.be.an('array');",
+									"});",
+									"",
+									"pm.test('Chat data structure is correct', function () {",
+									"    const response = pm.response.json();",
+									"    if (response.data.chats.length > 0) {",
+									"        const chat = response.data.chats[0];",
+									"        pm.expect(chat).to.have.property('id');",
+									"        pm.expect(chat).to.have.property('title');",
+									"        pm.expect(chat).to.have.property('userId');",
+									"        pm.expect(chat).to.have.property('metadata');",
+									"        pm.expect(chat).to.have.property('createdAt');",
+									"        pm.expect(chat).to.have.property('updatedAt');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/chats?includeMessages=true",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"chats"
+							],
+							"query": [
+								{
+									"key": "includeMessages",
+									"value": "true",
+									"description": "Include chat messages in response"
+								}
+							]
+						},
+						"description": "Get all chats for the authenticated user with optional message history"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Chat by ID with Messages",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Chat retrieved with messages', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data).to.have.property('id');",
+									"    pm.expect(response.data).to.have.property('title');",
+									"    pm.expect(response.data).to.have.property('messages');",
+									"    pm.expect(response.data.messages).to.be.an('array');",
+									"    pm.expect(response.data.id).to.eql(pm.collectionVariables.get('chatId'));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/chats/{{chatId}}?includeMessages=true",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"chats",
+								"{{chatId}}"
+							],
+							"query": [
+								{
+									"key": "includeMessages",
+									"value": "true",
+									"description": "Include chat messages in response"
+								}
+							]
+						},
+						"description": "Get a specific chat by ID with conversation history"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Chat Statistics",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Chat statistics retrieved', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data).to.have.property('totalChats');",
+									"    pm.expect(response.data).to.have.property('totalMessages');",
+									"    pm.expect(response.data).to.have.property('totalTokensUsed');",
+									"    pm.expect(response.data).to.have.property('averageMessagesPerChat');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/chats/stats",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"chats",
+								"stats"
+							]
+						},
+						"description": "Get chat statistics for the authenticated user"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Chat Title",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Chat updated successfully', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data).to.have.property('id');",
+									"    pm.expect(response.data.title).to.include('Updated');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Updated RAG Chat - {{$timestamp}}\",\n    \"description\": \"This chat has been updated via API\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/chats/{{chatId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"chats",
+								"{{chatId}}"
+							]
+						},
+						"description": "Update chat title and description"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Chat",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Chat deleted successfully', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.message).to.include('deleted');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/chats/{{chatId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"chats",
+								"{{chatId}}"
+							]
+						},
+						"description": "Delete a chat and all its messages"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Chat - Validation Error",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 400', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Validation error returned', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.false;",
+									"    pm.expect(response.message).to.include('required');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"query\": \"\",\n    \"title\": \"This should fail validation\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/chats",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"chats"
+							]
+						},
+						"description": "Test validation error with empty query"
+					},
+					"response": []
+				}
+			],
+			"description": "RAG-enabled chat management endpoints for intelligent document-aware conversations"
 		},
 		{
 			"name": "Complete API Test Flow",
