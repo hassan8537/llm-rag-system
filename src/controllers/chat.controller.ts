@@ -24,7 +24,7 @@ export class ChatController {
       }
 
       const includeMessages = req.query.includeMessages === 'true';
-      const chats = await this.chatService.getChats(userId.toString(), includeMessages);
+      const chats = await this.chatService.getChats(userId, includeMessages);
 
       res.status(200).json({
         success: true,
@@ -87,7 +87,7 @@ export class ChatController {
 
       const chatData: CreateChatRequest = {
         query: query.trim(),
-        userId: userId.toString(),
+        userId: userId,
         title: title?.trim(),
       };
 
@@ -168,7 +168,7 @@ export class ChatController {
       const queryData: ChatQueryRequest = {
         query: query.trim(),
         chatId,
-        userId: userId.toString(),
+        userId: userId,
       };
 
       const queryResponse = await this.chatService.processQuery(queryData);
@@ -229,7 +229,7 @@ export class ChatController {
       }
 
       const includeMessages = req.query.includeMessages !== 'false'; // Default to true
-      const result = await this.chatService.getChatById(chatId, userId.toString(), includeMessages);
+      const result = await this.chatService.getChatById(chatId, userId, includeMessages);
 
       if (!result) {
         res.status(404).json({
@@ -299,7 +299,7 @@ export class ChatController {
       if (title !== undefined) updates.title = title.trim();
       if (description !== undefined) updates.description = description.trim();
 
-      const chat = await this.chatService.updateChat(chatId, userId.toString(), updates);
+      const chat = await this.chatService.updateChat(chatId, userId, updates);
 
       if (!chat) {
         res.status(404).json({
@@ -347,7 +347,7 @@ export class ChatController {
         return;
       }
 
-      const deleted = await this.chatService.deleteChat(chatId, userId.toString());
+      const deleted = await this.chatService.deleteChat(chatId, userId);
 
       if (!deleted) {
         res.status(404).json({
@@ -385,7 +385,7 @@ export class ChatController {
         return;
       }
 
-      const stats = await this.chatService.getChatStats(userId.toString());
+      const stats = await this.chatService.getChatStats(userId);
 
       res.status(200).json({
         success: true,

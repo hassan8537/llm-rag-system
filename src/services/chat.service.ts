@@ -5,21 +5,21 @@ import { LLMService, LLMResponse } from './llm.service';
 
 export interface CreateChatRequest {
   query: string;
-  userId: string;
+  userId: number;
   title?: string;
 }
 
 export interface ChatQueryRequest {
   query: string;
   chatId: string;
-  userId: string;
+  userId: number;
 }
 
 export interface ChatResponse {
   id: string;
   title: string;
   description?: string;
-  userId: string;
+  userId: number;
   status: string;
   createdAt: Date;
   updatedAt: Date;
@@ -57,7 +57,7 @@ export class ChatService {
    * @param includeMessages - Whether to include recent messages
    * @returns Array of chats with metadata
    */
-  async getChats(userId: string, includeMessages: boolean = false): Promise<ChatResponse[]> {
+  async getChats(userId: number, includeMessages: boolean = false): Promise<ChatResponse[]> {
     try {
       const includeClause: any = [
         {
@@ -280,7 +280,7 @@ export class ChatService {
    */
   async getChatById(
     chatId: string, 
-    userId: string, 
+    userId: number, 
     includeMessages: boolean = true
   ): Promise<{
     chat: ChatResponse;
@@ -357,7 +357,7 @@ export class ChatService {
    */
   async updateChat(
     chatId: string,
-    userId: string,
+    userId: number,
     updates: { title?: string; description?: string }
   ): Promise<ChatResponse | null> {
     try {
@@ -397,7 +397,7 @@ export class ChatService {
    * @param userId - User ID (for authorization)
    * @returns Success status
    */
-  async deleteChat(chatId: string, userId: string): Promise<boolean> {
+  async deleteChat(chatId: string, userId: number): Promise<boolean> {
     try {
       const chat = await Chat.findOne({
         where: {
@@ -431,7 +431,7 @@ export class ChatService {
    * @param userId - User ID
    * @returns Chat statistics
    */
-  async getChatStats(userId: string): Promise<{
+  async getChatStats(userId: number): Promise<{
     totalChats: number;
     totalMessages: number;
     totalTokensUsed: number;

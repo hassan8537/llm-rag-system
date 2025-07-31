@@ -62,3 +62,5 @@ export class ChatMessage extends Model<ChatMessage> {
   @UpdatedAt
   updatedAt!: Date;
 }
+
+export default ChatMessage;

@@ -37,10 +37,10 @@ export class Chat extends Model<Chat> {
 
   @ForeignKey(() => User)
   @Column({
-    type: DataType.UUID,
+    type: DataType.INTEGER,
     allowNull: false,
   })
-  userId!: string;
+  userId!: number;
 
   @BelongsTo(() => User)
   user!: User;
@@ -70,3 +70,5 @@ export class Chat extends Model<Chat> {
   @UpdatedAt
   updatedAt!: Date;
 }
+
+export default Chat;
