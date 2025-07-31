@@ -13,6 +13,9 @@ RUN npm ci --include=dev
 # Copy source code
 COPY . .
 
+# Ensure migrations directory exists
+RUN mkdir -p ./migrations
+
 # Build the TypeScript application
 RUN npm run build
 
@@ -38,8 +41,8 @@ RUN npm ci --only=production && npm cache clean --force
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
 
-# Copy migrations if they exist
-COPY --from=builder /app/migrations ./migrations
+# Create migrations directory (will copy if files exist)
+RUN mkdir -p ./migrations
 
 # Change ownership to app user
 RUN chown -R nextjs:nodejs /app
