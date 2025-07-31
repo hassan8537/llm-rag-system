@@ -41,7 +41,7 @@ export class DocumentController extends BaseController {
         s3Key,
         fileName,
         contentType,
-        fileSize
+        fileSize,
       );
 
       BaseController.sendSuccess(res, {

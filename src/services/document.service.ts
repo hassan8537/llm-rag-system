@@ -59,7 +59,7 @@ export class DocumentService {
     s3Key: string,
     fileName: string,
     contentType: string,
-    fileSize?: number
+    fileSize?: number,
   ): Promise<DocumentProcessingResult> {
     // Validate PDF content type
     if (!contentType.includes('pdf')) {
@@ -112,7 +112,8 @@ export class DocumentService {
       const embeddingsCreated = await this.createPageEmbeddings(
         document.id,
         fullText,
-        totalPages
+        totalPages,
+        fileName,
       );
 
       // Mark processing as completed
@@ -319,7 +320,8 @@ export class DocumentService {
   private async createPageEmbeddings(
     documentId: number,
     fullText: string,
-    totalPages: number
+    totalPages: number,
+    fileName: string
   ): Promise<number> {
     try {
       // Split text into pages (simple approach - can be improved)
@@ -334,8 +336,9 @@ export class DocumentService {
         }
 
         // Generate embedding for page content
-        const embedding = await this.embeddingService.getEmbedding(pageContent);
-        
+        const text = `Page ${i + 1} of ${totalPages} from document '${fileName}': ${pageContent}`;
+        const embedding = await this.embeddingService.getEmbedding(text);
+
         // Estimate token count (rough approximation: 1 token ≈ 4 characters)
         const tokenCount = Math.ceil(pageContent.length / 4);
 
@@ -343,8 +346,8 @@ export class DocumentService {
         await Embedding.create({
           documentId,
           pageNumber: i + 1,
-          content: pageContent,
-          embedding,
+          content: text,
+          embedding: JSON.stringify(embedding),
           tokenCount,
         });
 
