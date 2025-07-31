@@ -1,7 +1,9 @@
-import { Chat } from '../models/chat.model';
-import { ChatMessage } from '../models/chat-message.model';
-import { User } from '../models/user.model';
-import { LLMService, LLMResponse } from './llm.service';
+import { Chat } from "../models/chat.model";
+import { ChatMessage } from "../models/chat-message.model";
+import { User } from "../models/user.model";
+import { LLMService, LLMResponse } from "./llm.service";
+import { Embedding } from "../models/embedding.model";
+import { EmbeddingService } from "./embedding.service";
 
 export interface CreateChatRequest {
   query: string;
@@ -46,9 +48,11 @@ export interface QueryResponse {
 
 export class ChatService {
   private llmService: LLMService;
+  private embeddingService: EmbeddingService;
 
   constructor() {
     this.llmService = new LLMService();
+    this.embeddingService = new EmbeddingService();
   }
 
   /**
@@ -57,33 +61,36 @@ export class ChatService {
    * @param includeMessages - Whether to include recent messages
    * @returns Array of chats with metadata
    */
-  async getChats(userId: number, includeMessages: boolean = false): Promise<ChatResponse[]> {
+  async getChats(
+    userId: number,
+    includeMessages: boolean = false
+  ): Promise<ChatResponse[]> {
     try {
       const includeClause: any = [
         {
           model: User,
-          as: 'user',
-          attributes: ['id', 'email', 'firstName', 'lastName'],
-        }
+          as: "user",
+          attributes: ["id", "email", "firstName", "lastName"],
+        },
       ];
 
       if (includeMessages) {
         includeClause.push({
           model: ChatMessage,
-          as: 'messages',
+          as: "messages",
           limit: 1,
-          order: [['createdAt', 'DESC']],
-          attributes: ['role', 'content', 'createdAt'],
+          order: [["createdAt", "DESC"]],
+          attributes: ["role", "content", "createdAt"],
         });
       }
 
       const chats = await Chat.findAll({
         where: {
           userId,
-          status: 'active',
+          status: "active",
         },
         include: includeClause,
-        order: [['updatedAt', 'DESC']],
+        order: [["updatedAt", "DESC"]],
       });
 
       const chatResponses: ChatResponse[] = [];
@@ -91,14 +98,14 @@ export class ChatService {
       for (const chat of chats) {
         // Get message count
         const messageCount = await ChatMessage.count({
-          where: { chatId: chat.id }
+          where: { chatId: chat.id },
         });
 
         // Get last message
         const lastMessage = await ChatMessage.findOne({
           where: { chatId: chat.id },
-          order: [['createdAt', 'DESC']],
-          attributes: ['role', 'content', 'createdAt'],
+          order: [["createdAt", "DESC"]],
+          attributes: ["role", "content", "createdAt"],
         });
 
         chatResponses.push({
@@ -111,17 +118,21 @@ export class ChatService {
           updatedAt: chat.updatedAt,
           metadata: chat.metadata,
           messageCount,
-          lastMessage: lastMessage ? {
-            role: lastMessage.role,
-            content: lastMessage.content.substring(0, 100) + (lastMessage.content.length > 100 ? '...' : ''),
-            createdAt: lastMessage.createdAt,
-          } : undefined,
+          lastMessage: lastMessage
+            ? {
+                role: lastMessage.role,
+                content:
+                  lastMessage.content.substring(0, 100) +
+                  (lastMessage.content.length > 100 ? "..." : ""),
+                createdAt: lastMessage.createdAt,
+              }
+            : undefined,
         });
       }
 
       return chatResponses;
     } catch (error: any) {
-      console.error('Error getting chats:', error);
+      console.error("Error getting chats:", error);
       throw new Error(`Failed to get chats: ${error.message}`);
     }
   }
@@ -133,12 +144,12 @@ export class ChatService {
    */
   async createChat(chatData: CreateChatRequest): Promise<QueryResponse> {
     const startTime = Date.now();
-    
+
     try {
       // Verify user exists
       const user = await User.findByPk(chatData.userId);
       if (!user) {
-        throw new Error('User not found');
+        throw new Error("User not found");
       }
 
       // Generate title if not provided
@@ -151,12 +162,12 @@ export class ChatService {
       const chat = await Chat.create({
         title,
         userId: chatData.userId,
-        status: 'active',
+        status: "active",
         metadata: {
           totalMessages: 0,
           lastQueryTime: new Date(),
           totalTokensUsed: 0,
-        }
+        },
       } as any);
 
       // Process the first query
@@ -167,9 +178,8 @@ export class ChatService {
       });
 
       return queryResponse;
-
     } catch (error: any) {
-      console.error('Error creating chat:', error);
+      console.error("Error creating chat:", error);
       throw new Error(`Failed to create chat: ${error.message}`);
     }
   }
@@ -188,32 +198,103 @@ export class ChatService {
         where: {
           id: queryData.chatId,
           userId: queryData.userId,
-          status: 'active',
+          status: "active",
         },
       });
 
       if (!chat) {
-        throw new Error('Chat not found or access denied');
+        throw new Error("Chat not found or access denied");
       }
 
       // Get chat history for context
       const recentMessages = await ChatMessage.findAll({
         where: { chatId: queryData.chatId },
-        order: [['createdAt', 'DESC']],
+        order: [["createdAt", "DESC"]],
         limit: 10,
-        attributes: ['role', 'content'],
+        attributes: ["role", "content"],
       });
 
-      const chatHistory = recentMessages.reverse().map(msg => ({
-        role: msg.role as 'user' | 'assistant',
+      const chatHistory = recentMessages.reverse().map((msg) => ({
+        role: msg.role as "user" | "assistant",
         content: msg.content,
       }));
 
       // Generate LLM response without vector search
-      console.log('🤖 Generating LLM response');
+
+      const query_embeddings = await this.embeddingService.getEmbedding(
+        queryData.query
+      );
+
+      const result = await Embedding.searchDocumentsByEmbedding(
+        query_embeddings,
+        3
+      );
+
+      const context = result
+        .map((doc) => `documentId: ${doc.documentId}\nContent: ${doc.content}`)
+        .join("\n\n");
+
+      const prompt = `
+# Query Analysis and Response Task
+
+## System Identity:
+You are Atlas AI, an intelligent assistant specialized in helping users find relevant information. When asked about your identity, respond with: "I am Atlas AI, and I'm here to help you find relevant information based on the available data and context."
+
+## User Query:
+${queryData.query}
+
+## Available Context:
+${context}
+
+## Instructions:
+You are an expert analyst tasked with providing accurate, evidence-based answers. Follow these guidelines:
+
+### 1. Context Analysis
+- Carefully examine the provided context for relevant information
+- Identify key facts, data points, and evidence that directly relate to the query
+- Note any limitations or gaps in the available information
+
+### 2. Answer Requirements
+- **Accuracy First**: Only provide information that can be directly supported by the given context
+- **Be Specific**: Include relevant details, numbers, dates, and examples from the context
+- **Stay Focused**: Address the specific question asked without unnecessary tangents
+- **Cite Sources**: When possible, reference specific parts of the context that support your answer
+
+### 3. Handling Insufficient Information
+If the context does not contain enough information to fully answer the query:
+- Clearly state what aspects you can answer based on available context
+- Identify specific information gaps
+- Ask targeted clarifying questions such as:
+  - "Could you provide more context about [specific aspect]?"
+  - "To give you a complete answer, I need information about [missing element]"
+  - "The context covers [X] but doesn't address [Y]. Could you clarify [specific question]?"
+
+### 4. Response Format
+Structure your response as follows:
+- Start with a clear, concise answer to the main question
+- Provide relevant context and evidence
+- Indicate how confident you are in your answer based on available context
+- If needed, ask specific questions for clarification
+
+### 5. Quality Checks
+Before responding, verify:
+- Does your answer directly address the query?
+- Is every claim supported by the provided context?
+- Have you avoided making assumptions beyond the given information?
+- Is your response clear and actionable?
+
+## Examples of Good Clarifying Questions:
+- "The context mentions [topic] but doesn't specify [detail]. What specific aspect of [topic] are you most interested in?"
+- "I can answer [part A] based on the context, but for [part B], could you provide information about [specific need]?"
+- "The data shows [finding], but to provide actionable recommendations, could you clarify your [goal/constraint/timeframe]?"
+
+Please provide your response following these guidelines.
+`;
+
+      console.log("🤖 Generating LLM response");
       const llmResponse: LLMResponse = await this.llmService.generateResponse(
-        queryData.query,
-        '', // No context from vector search
+        prompt,
+        "", // No context from vector search
         chatHistory
       );
 
@@ -222,23 +303,23 @@ export class ChatService {
       // Save user message
       const userMessage = await ChatMessage.create({
         chatId: queryData.chatId,
-        role: 'user',
+        role: "user",
         content: queryData.query,
         metadata: {
           processingTime,
-        }
+        },
       } as any);
 
       // Save assistant response
       const assistantMessage = await ChatMessage.create({
         chatId: queryData.chatId,
-        role: 'assistant',
+        role: "assistant",
         content: llmResponse.answer,
         metadata: {
           tokensUsed: llmResponse.tokensUsed.total,
           model: llmResponse.model,
           processingTime,
-        }
+        },
       } as any);
 
       // Update chat metadata
@@ -248,7 +329,9 @@ export class ChatService {
           ...currentMetadata,
           totalMessages: (currentMetadata.totalMessages || 0) + 2,
           lastQueryTime: new Date(),
-          totalTokensUsed: (currentMetadata.totalTokensUsed || 0) + llmResponse.tokensUsed.total,
+          totalTokensUsed:
+            (currentMetadata.totalTokensUsed || 0) +
+            llmResponse.tokensUsed.total,
         },
         updatedAt: new Date(),
       });
@@ -264,9 +347,8 @@ export class ChatService {
         },
         messageId: assistantMessage.id,
       };
-
     } catch (error: any) {
-      console.error('Error processing query:', error);
+      console.error("Error processing query:", error);
       throw new Error(`Failed to process query: ${error.message}`);
     }
   }
@@ -279,8 +361,8 @@ export class ChatService {
    * @returns Chat details with messages
    */
   async getChatById(
-    chatId: string, 
-    userId: number, 
+    chatId: string,
+    userId: number,
     includeMessages: boolean = true
   ): Promise<{
     chat: ChatResponse;
@@ -297,19 +379,19 @@ export class ChatService {
         where: {
           id: chatId,
           userId,
-          status: 'active',
+          status: "active",
         },
         include: [
           {
             model: User,
-            as: 'user',
-            attributes: ['id', 'email', 'firstName', 'lastName'],
-          }
+            as: "user",
+            attributes: ["id", "email", "firstName", "lastName"],
+          },
         ],
       });
 
       if (!chat) {
-        throw new Error('Chat not found');
+        throw new Error("Chat not found");
       }
 
       const chatResponse: ChatResponse = {
@@ -327,11 +409,11 @@ export class ChatService {
       if (includeMessages) {
         const chatMessages = await ChatMessage.findAll({
           where: { chatId },
-          order: [['createdAt', 'ASC']],
-          attributes: ['id', 'role', 'content', 'createdAt', 'metadata'],
+          order: [["createdAt", "ASC"]],
+          attributes: ["id", "role", "content", "createdAt", "metadata"],
         });
 
-        messages = chatMessages.map(msg => ({
+        messages = chatMessages.map((msg) => ({
           id: msg.id,
           role: msg.role,
           content: msg.content,
@@ -341,9 +423,8 @@ export class ChatService {
       }
 
       return { chat: chatResponse, messages };
-
     } catch (error: any) {
-      console.error('Error getting chat by ID:', error);
+      console.error("Error getting chat by ID:", error);
       throw new Error(`Failed to get chat: ${error.message}`);
     }
   }
@@ -365,7 +446,7 @@ export class ChatService {
         where: {
           id: chatId,
           userId,
-          status: 'active',
+          status: "active",
         },
       });
 
@@ -386,7 +467,7 @@ export class ChatService {
         metadata: chat.metadata,
       };
     } catch (error: any) {
-      console.error('Error updating chat:', error);
+      console.error("Error updating chat:", error);
       throw new Error(`Failed to update chat: ${error.message}`);
     }
   }
@@ -403,7 +484,7 @@ export class ChatService {
         where: {
           id: chatId,
           userId,
-          status: 'active',
+          status: "active",
         },
       });
 
@@ -413,15 +494,15 @@ export class ChatService {
 
       // Delete all messages first
       await ChatMessage.destroy({
-        where: { chatId }
+        where: { chatId },
       });
 
       // Mark chat as deleted
-      await chat.update({ status: 'deleted' });
-      
+      await chat.update({ status: "deleted" });
+
       return true;
     } catch (error: any) {
-      console.error('Error deleting chat:', error);
+      console.error("Error deleting chat:", error);
       throw new Error(`Failed to delete chat: ${error.message}`);
     }
   }
@@ -439,33 +520,34 @@ export class ChatService {
   }> {
     try {
       const totalChats = await Chat.count({
-        where: { userId, status: 'active' }
+        where: { userId, status: "active" },
       });
 
       const totalMessages = await ChatMessage.count({
         include: [
           {
             model: Chat,
-            as: 'chat',
-            where: { userId, status: 'active' },
+            as: "chat",
+            where: { userId, status: "active" },
             attributes: [],
-          }
+          },
         ],
       });
 
       // Get total tokens used from chat metadata
       const chats = await Chat.findAll({
-        where: { userId, status: 'active' },
-        attributes: ['metadata'],
+        where: { userId, status: "active" },
+        attributes: ["metadata"],
       });
 
       const totalTokensUsed = chats.reduce((total, chat) => {
         return total + (chat.metadata?.totalTokensUsed || 0);
       }, 0);
 
-      const averageMessagesPerChat = totalChats > 0 
-        ? Math.round((totalMessages / totalChats) * 100) / 100 
-        : 0;
+      const averageMessagesPerChat =
+        totalChats > 0
+          ? Math.round((totalMessages / totalChats) * 100) / 100
+          : 0;
 
       return {
         totalChats,
@@ -474,7 +556,7 @@ export class ChatService {
         averageMessagesPerChat,
       };
     } catch (error: any) {
-      console.error('Error getting chat stats:', error);
+      console.error("Error getting chat stats:", error);
       throw new Error(`Failed to get chat stats: ${error.message}`);
     }
   }

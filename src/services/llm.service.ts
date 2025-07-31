@@ -31,9 +31,9 @@ export class LLMService {
    * @param temperature - Temperature for response generation
    */
   constructor(
-    model: string = 'gpt-3.5-turbo',
+    model: string = 'gpt-4-turbo',
     maxTokens: number = 1000,
-    temperature: number = 0.7
+    temperature: number = 0.6
   ) {
     this.model = model;
     this.maxTokens = maxTokens;
