@@ -6,12 +6,12 @@ services:
     image: postgres:15-alpine
     container_name: motor-postgres
     environment:
-      POSTGRES_DB: ${dbname:-motor_backend}
-      POSTGRES_USER: ${username:-postgres}
-      POSTGRES_PASSWORD: ${password:-postgres}
+      POSTGRES_DB: ${DB_NAME:-motor_backend}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
       POSTGRES_HOST_AUTH_METHOD: trust
     ports:
-      - "${port:-5432}:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -19,7 +19,7 @@ services:
       - motor-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${username:-postgres} -d ${dbname:-motor_backend}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-motor_backend}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -33,11 +33,11 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: ${PORT:-3000}
-      host: postgres
-      port: 5432
-      dbname: ${dbname:-motor_backend}
-      username: ${username:-postgres}
-      password: ${password:-postgres}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-motor_backend}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key}
       AWS_REGION: ${AWS_REGION}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
