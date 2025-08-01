@@ -1,6 +1,10 @@
 import { Sequelize } from 'sequelize-typescript';
 import config from '../config/database';
-import * as path from 'path';
+import { User } from '../models/user.model';
+import { Chat } from '../models/chat.model';
+import { ChatMessage } from '../models/chat-message.model';
+import { Document } from '../models/document.model';
+import { Embedding } from '../models/embedding.model';
 
 const env = process.env.NODE_ENV || 'development';
 const dbConfig = config[env as keyof typeof config];
@@ -13,10 +17,7 @@ export const sequelize = new Sequelize({
   port: dbConfig.port,
   dialect: 'postgres',
   logging: dbConfig.logging,
-  models: [path.join(__dirname, '../models/**/*.model.ts')],
-  modelMatch: (filename: string, member: string) => {
-    return filename.substring(0, filename.indexOf('.model')) === member.toLowerCase();
-  },
+  models: [User, Chat, ChatMessage, Document, Embedding],
   ...(dbConfig.dialectOptions && { dialectOptions: dbConfig.dialectOptions }),
 });
 
