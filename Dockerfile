@@ -1,60 +1,57 @@
 # Multi-stage build for TypeScript Node.js application
+
+# --- Builder stage ---
 FROM --platform=linux/amd64 public.ecr.aws/docker/library/node:18-alpine3.20 AS builder
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
 COPY package*.json ./
-
-# Install dependencies (including dev dependencies for building)
 RUN npm ci --include=dev
 
-# Copy source code
 COPY . .
+RUN mkdir -p ./migrations && npm run build
 
-# Ensure migrations directory exists
-RUN mkdir -p ./migrations
 
-# Build the TypeScript application
-RUN npm run build
-
-# Production stage
+# --- Production stage ---
 FROM --platform=linux/amd64 public.ecr.aws/docker/library/node:18-alpine3.20 AS production
 
-# Install dumb-init for proper signal handling
-RUN apk add --no-cache dumb-init
+# Define build arguments
+ARG APP_SECRETS
+ARG RDS_CREDENTIALS
 
-# Create app user for security
+# Install tools
+RUN apk add --no-cache dumb-init jq
+
+# Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001
+    adduser -S appuser -u 1001
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
+# Copy dependencies and install production packages
 COPY package*.json ./
-
-# Install only production dependencies
 RUN npm ci --only=production && npm cache clean --force
 
-# Copy built application from builder stage
+# Copy built application
 COPY --from=builder /app/dist ./dist
 
-# Create migrations directory (will copy if files exist)
-RUN mkdir -p ./migrations
+# Setup environment variables from injected JSON secrets
+RUN mkdir -p /secrets && \
+    printf "%s\n" "$APP_SECRETS" | jq -r 'to_entries[] | "export \(.key)=\(.value)"' > /secrets/app_secrets.env && \
+    printf "%s\n" "$RDS_CREDENTIALS" | jq -r 'if .host then "export DB_HOST=" + .host else empty end, if .dbname then "export DB_NAME=" + .dbname else empty end, if .db_username then "export DB_USER=" + .db_username else empty end, if .username then "export DB_USER=" + .username else empty end, if .db_password then "export DB_PASSWORD=" + .db_password else empty end, if .password then "export DB_PASSWORD=" + .password else empty end, if .db_port then "export DB_PORT=" + (.db_port | tostring) else empty end, if .port then "export DB_PORT=" + (.port | tostring) else empty end' > /secrets/rds_secrets.env
 
-# Change ownership to app user
-RUN chown -R nextjs:nodejs /app
-USER nextjs
+# Init wrapper to load secrets at runtime
+RUN printf '#!/bin/sh\n. /secrets/app_secrets.env\n. /secrets/rds_secrets.env\nexec "$@"\n' > /entrypoint.sh && \
+    chmod +x /entrypoint.sh
 
-# Expose port
+# Set permissions
+RUN chown -R appuser:nodejs /app
+USER appuser
+
 EXPOSE 3000
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
 
-# Start the application with dumb-init
-ENTRYPOINT ["dumb-init", "--"]
-CMD ["npm", "dev"]
+ENTRYPOINT ["dumb-init", "--", "/entrypoint.sh"]
+CMD ["npm", "start"]
