@@ -38,7 +38,7 @@ COPY --from=builder /app/dist ./dist
 # Setup environment variables from injected JSON secrets
 RUN mkdir -p /secrets && \
     printf "%s\n" "$APP_SECRETS" | jq -r 'to_entries[] | "export \(.key)=\(.value)"' > /secrets/app_secrets.env && \
-    printf "%s\n" "$RDS_CREDENTIALS" | jq -r 'if .host then "export DB_HOST=" + .host else empty end, if .dbname then "export DB_NAME=" + .dbname else empty end, if .db_username then "export DB_USER=" + .db_username else empty end, if .username then "export DB_USER=" + .username else empty end, if .db_password then "export DB_PASSWORD=" + .db_password else empty end, if .password then "export DB_PASSWORD=" + .password else empty end, if .db_port then "export DB_PORT=" + (.db_port | tostring) else empty end, if .port then "export DB_PORT=" + (.port | tostring) else empty end' > /secrets/rds_secrets.env
+    printf "%s\n" "$RDS_CREDENTIALS" | jq -r 'if .db_host then "export DB_HOST=" + .db_host else empty end, if .dbname then "export DB_NAME=" + .dbname else empty end, if .db_username then "export DB_USER=" + .db_username else empty end, if .db_password then "export DB_PASSWORD=" + .db_password else empty end, if .db_port then "export DB_PORT=" + (.db_port | tostring) else empty end' > /secrets/rds_secrets.env
 
 # Init wrapper to load secrets at runtime
 RUN printf '#!/bin/sh\n. /secrets/app_secrets.env\n. /secrets/rds_secrets.env\nexec "$@"\n' > /entrypoint.sh && \
