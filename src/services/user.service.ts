@@ -33,7 +33,7 @@ export class UserService {
         email: userData.email,
         password: hashedPassword,
         phone: userData.phone,
-        role: "user",
+        role: userData.role ?? "user",
         isActive: userData.isActive ?? true,
       });
 
@@ -44,6 +44,7 @@ export class UserService {
         lastName: user.lastName,
         email: user.email,
         phone: user.phone,
+        role: user.role || "user",
         isActive: user.isActive,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,

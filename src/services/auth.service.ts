@@ -1,7 +1,7 @@
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
-import { User } from '../models/user.model';
-import { TokenBlacklistService } from './token-blacklist.service';
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+import { User } from "../models/user.model";
+import { TokenBlacklistService } from "./token-blacklist.service";
 
 export interface AuthResponse {
   user: {
@@ -9,6 +9,7 @@ export interface AuthResponse {
     email: string;
     firstName: string;
     lastName: string;
+    role: string;
   };
   token: string;
 }
@@ -28,8 +29,8 @@ export class AuthService {
   private readonly jwtExpiresIn: string;
 
   constructor() {
-    this.jwtSecret = process.env.JWT_SECRET || 'your-jwt-secret-key';
-    this.jwtExpiresIn = process.env.JWT_EXPIRES_IN || '24h';
+    this.jwtSecret = process.env.JWT_SECRET || "your-jwt-secret-key";
+    this.jwtExpiresIn = process.env.JWT_EXPIRES_IN || "24h";
   }
 
   /**
@@ -39,25 +40,25 @@ export class AuthService {
     // Verify user exists and is active
     const user = await User.findByPk(data.userId);
     if (!user) {
-      throw new Error('User not found');
+      throw new Error("User not found");
     }
 
     // Decode token to get expiration time
     try {
       const decoded = jwt.verify(data.token, this.jwtSecret) as jwt.JwtPayload;
       const expiresAt = new Date(decoded.exp! * 1000); // Convert to milliseconds
-      
+
       // Add token to blacklist
       TokenBlacklistService.addToBlacklist(data.token, expiresAt);
-      
+
       console.log(`Token blacklisted for user ${user.email}`);
     } catch (error) {
       // Token is already invalid, but that's okay
-      console.log('Token was already invalid');
+      console.log("Token was already invalid");
     }
 
     return {
-      message: 'Successfully signed out - token invalidated'
+      message: "Successfully signed out - token invalidated",
     };
   }
 
@@ -68,18 +69,18 @@ export class AuthService {
     // Find user by email
     const user = await User.findByEmail(data.email);
     if (!user) {
-      throw new Error('Invalid email or password');
+      throw new Error("Invalid email or password");
     }
 
     // Check if user is active
     if (!user.isActive) {
-      throw new Error('Account is deactivated');
+      throw new Error("Account is deactivated");
     }
 
     // Verify password
     const isPasswordValid = await bcrypt.compare(data.password, user.password);
     if (!isPasswordValid) {
-      throw new Error('Invalid email or password');
+      throw new Error("Invalid email or password");
     }
 
     // Generate token
@@ -91,6 +92,7 @@ export class AuthService {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        role: user.role || "user",
       },
       token,
     };
@@ -103,13 +105,13 @@ export class AuthService {
     try {
       // Check if token is blacklisted first
       if (TokenBlacklistService.isBlacklisted(token)) {
-        throw new Error('Token has been invalidated');
+        throw new Error("Token has been invalidated");
       }
 
       const decoded = jwt.verify(token, this.jwtSecret) as { userId: number };
       return decoded;
     } catch (error) {
-      throw new Error('Invalid or expired token');
+      throw new Error("Invalid or expired token");
     }
   }
 
@@ -124,10 +126,8 @@ export class AuthService {
    * Generate JWT token
    */
   private generateToken(userId: number): string {
-    return jwt.sign(
-      { userId },
-      this.jwtSecret,
-      { expiresIn: this.jwtExpiresIn } as jwt.SignOptions
-    );
+    return jwt.sign({ userId }, this.jwtSecret, {
+      expiresIn: this.jwtExpiresIn,
+    } as jwt.SignOptions);
   }
 }

@@ -1,4 +1,4 @@
-import { User } from '../models/user.model';
+import { User } from "../models/user.model";
 
 export interface CreateUserDto {
   firstName: string;
@@ -6,6 +6,7 @@ export interface CreateUserDto {
   email: string;
   password: string;
   phone?: string;
+  role?: string;
   isActive?: boolean;
 }
 
@@ -14,6 +15,7 @@ export interface UpdateUserDto {
   lastName?: string;
   email?: string;
   phone?: string;
+  role?: string;
   isActive?: boolean;
 }
 

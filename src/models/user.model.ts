@@ -50,7 +50,7 @@ export class User extends Model {
   @Column(DataType.STRING)
   phone?: string;
 
-  @AllowNull(false)
+  @AllowNull(true)
   @Default("user")
   @Column(DataType.ENUM("admin", "user"))
   role?: string;

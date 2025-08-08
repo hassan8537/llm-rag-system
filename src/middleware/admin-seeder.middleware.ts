@@ -28,6 +28,7 @@ export class AdminSeeder {
         email: adminEmail,
         password: hashedPassword,
         phone: "1234567890",
+        role: "admin",
         isActive: true,
       });
 

@@ -7,7 +7,6 @@ dotenv.config();
 import express, { Request, Response, Application } from "express";
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
-import session from "express-session";
 import cors from "cors";
 import { connectDatabase } from "./database/connection";
 import userRoutes from "./routes/user.routes";
