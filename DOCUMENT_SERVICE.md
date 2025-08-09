@@ -51,7 +51,31 @@ DELETE /api/documents/:id        - Delete document and all embeddings
 ### Controllers & Routes
 - **DocumentController**: Request handling with proper error responses
 - **Document Routes**: Protected endpoints requiring authentication
+- **Health Check Integration**: Document service health monitoring
 - **Postman Collection**: Comprehensive API testing suite
+
+## Health Monitoring
+
+The document service includes comprehensive health check capabilities:
+
+### Health Check Endpoint
+```
+GET /api/health/document
+```
+
+### Health Criteria
+- ✅ Service initialization successful
+- ✅ Dependencies available (S3Service, EmbeddingService)
+- ✅ Database connectivity
+- ❌ Service initialization failures or missing dependencies
+
+### Monitoring Integration
+The document service health is included in the overall system health check:
+```
+GET /api/health/status
+```
+
+For detailed health monitoring information, see [HEALTH_CHECK_API.md](./HEALTH_CHECK_API.md).
 
 ## Database Schema
 

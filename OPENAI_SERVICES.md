@@ -8,6 +8,26 @@ The Motor Backend API now includes two main OpenAI services:
 - **EmbeddingService**: Generate embeddings for text similarity and vector operations
 - **LLMService**: Generate text responses using GPT models
 
+Both services include comprehensive health monitoring to ensure API connectivity and configuration validation.
+
+## Health Monitoring
+
+### Health Check Endpoints
+- **LLM Service**: `GET /api/health/llm`
+- **Embedding Service**: `GET /api/health/embedding`
+- **Overall Status**: `GET /api/health/status`
+
+### Health Criteria
+- ✅ OPENAI_API_KEY configured and accessible
+- ✅ Service initialization successful
+- ✅ Model configuration valid
+- ❌ Missing API key or configuration errors
+
+### Integration with System Health
+Both OpenAI services are monitored as part of the comprehensive system health check. Service status affects overall system health ratings.
+
+For detailed health check documentation, see [HEALTH_CHECK_API.md](./HEALTH_CHECK_API.md).
+
 ## Services Architecture
 
 ### 📁 File Structure

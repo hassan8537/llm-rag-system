@@ -10,23 +10,48 @@ src/
 ├── controllers/          # Request handlers and response logic
 │   ├── base.controller.ts       # Base controller with common methods
 │   ├── user.controller.ts       # User-specific controller
+│   ├── auth.controller.ts       # Authentication controller
+│   ├── chat.controller.ts       # Chat and RAG controller
+│   ├── document.controller.ts   # Document processing controller
+│   ├── s3.controller.ts         # S3 file operations controller
+│   ├── health.controller.ts     # Health check controller
 │   └── example.controller.ts    # Template controller
 ├── middleware/           # Request processing middleware
 │   ├── validation.middleware.ts # Input validation
+│   ├── auth.middleware.ts       # Authentication middleware
 │   └── error.middleware.ts      # Error handling
 ├── models/              # Database models (Sequelize)
-│   └── user.model.ts    # User entity definition
+│   ├── user.model.ts    # User entity definition
+│   ├── chat.model.ts    # Chat entity definition
+│   ├── chat-message.model.ts    # Chat message entity
+│   ├── document.model.ts        # Document entity
+│   └── embedding.model.ts       # Vector embedding entity
 ├── services/            # Business logic layer
-│   └── user.service.ts  # User business operations
+│   ├── user.service.ts  # User business operations
+│   ├── auth.service.ts  # Authentication logic
+│   ├── chat.service.ts  # Chat and RAG operations
+│   ├── document.service.ts      # Document processing
+│   ├── embedding.service.ts     # Vector operations
+│   ├── llm.service.ts   # Language model integration
+│   ├── s3.service.ts    # AWS S3 operations
+│   └── token-blacklist.service.ts # Token management
 ├── routes/              # API route definitions
-│   └── user.routes.ts   # User endpoint mappings
+│   ├── user.routes.ts   # User endpoint mappings
+│   ├── auth.routes.ts   # Authentication routes
+│   ├── chat.routes.ts   # Chat API routes
+│   ├── document.routes.ts       # Document API routes
+│   ├── s3.routes.ts     # S3 API routes
+│   └── health.routes.ts # Health check routes
 ├── types/               # TypeScript type definitions
 │   ├── user.types.ts    # User-related types
 │   └── api.types.ts     # API response types
 ├── config/              # Configuration files
-│   └── database.ts      # Database configuration
+│   ├── database.ts      # Database configuration
+│   └── openai.ts        # OpenAI client configuration
 ├── database/            # Database connection
 │   └── connection.ts    # Sequelize connection setup
+├── utils/               # Utility functions
+│   └── migrator.ts      # Database migration runner
 └── scripts/             # Utility scripts
     ├── init-db.ts       # Database initialization
     └── seed-db.ts       # Sample data seeding
@@ -298,3 +323,47 @@ app.use('/api/products', productRoutes);
 8. **Error Handling**: Comprehensive error management
 9. **Validation**: Input validation at multiple levels
 10. **Documentation**: Clear code structure and comments
+
+## Health Check System
+
+### Overview
+The health check system provides comprehensive monitoring of all application services and dependencies. It helps ensure system reliability and enables proactive monitoring.
+
+### Health Check Controller
+The `HealthController` provides endpoints to monitor:
+- **Database connectivity** - PostgreSQL connection status
+- **S3 service** - AWS S3 configuration and access
+- **LLM service** - OpenAI API connectivity for language models
+- **Embedding service** - OpenAI API for vector embeddings
+- **Document service** - Document processing capabilities
+- **Chat service** - RAG (Retrieval Augmented Generation) functionality
+- **Auth service** - Authentication and JWT configuration
+- **User service** - User management operations
+- **Token blacklist service** - Security token management
+
+### Health Status Types
+- **Healthy** 🟢 - Service fully operational
+- **Degraded** 🟡 - Service partially operational with limitations
+- **Unhealthy** 🔴 - Service not operational, requires attention
+
+### Key Features
+- **Comprehensive monitoring** - All critical services covered
+- **Response time tracking** - Performance monitoring
+- **Dependency validation** - External service connectivity
+- **Configuration checks** - Environment variable validation
+- **Detailed error reporting** - Specific failure information
+- **Public accessibility** - Supports load balancer health checks
+
+### Usage
+```bash
+# Overall system health
+GET /api/health/status
+
+# Individual service health
+GET /api/health/database
+GET /api/health/s3
+GET /api/health/llm
+# ... other services
+```
+
+For detailed health check documentation, see [HEALTH_CHECK_API.md](./HEALTH_CHECK_API.md).

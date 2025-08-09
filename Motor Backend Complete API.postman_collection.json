@@ -1,0 +1,2486 @@
+{
+	"info": {
+		"_postman_id": "0cd37636-cbf7-4bf4-b50e-a9145147e670",
+		"name": "Motor Backend Complete API",
+		"description": "Complete API collection for Motor Backend with authentication, health monitoring, S3 file management, PDF document processing with embeddings, and chat management. Includes comprehensive health check endpoints for all services.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "26113741",
+		"_collection_link": "https://restless-star-518109.postman.co/workspace/Atlas-AI~b03927d2-4d55-446f-9020-2b71ba3dcb22/collection/26113741-0cd37636-cbf7-4bf4-b50e-a9145147e670?action=share&source=collection_link&creator=26113741"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Sign In (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Test response status",
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"// Test response structure",
+									"pm.test('Response has correct structure', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response).to.have.property('success', true);",
+									"    pm.expect(response).to.have.property('data');",
+									"    pm.expect(response.data).to.have.property('token');",
+									"    pm.expect(response.data).to.have.property('user');",
+									"});",
+									"",
+									"// Save token and user ID",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data.token) {",
+									"        pm.collectionVariables.set('authToken', response.data.token);",
+									"        pm.collectionVariables.set('userId', response.data.user.id);",
+									"        console.log('✅ Token saved:', response.data.token.substring(0, 20) + '...');",
+									"        console.log('✅ User ID saved:', response.data.user.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@motor.com\",\n  \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/signin",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"signin"
+							]
+						},
+						"description": "Sign in with admin credentials (auto-saves token)"
+					},
+					"response": []
+				},
+				{
+					"name": "Sign In (Custom User)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data.token) {",
+									"        pm.collectionVariables.set('authToken', response.data.token);",
+									"        console.log('Token saved:', response.data.token);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/signin",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"signin"
+							]
+						},
+						"description": "Sign in with custom user credentials"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Profile data is returned', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data).to.have.property('id');",
+									"    pm.expect(response.data).to.have.property('email');",
+									"    pm.expect(response.data).to.have.property('firstName');",
+									"    pm.expect(response.data).to.have.property('lastName');",
+									"});",
+									"",
+									"console.log('✅ Profile retrieved successfully');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"profile"
+							]
+						},
+						"description": "Get current user profile (requires authentication)"
+					},
+					"response": []
+				},
+				{
+					"name": "Sign Out",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Sign out successful', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data.message).to.include('token invalidated');",
+									"});",
+									"",
+									"console.log('✅ Sign out completed - token invalidated');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/signout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"signout"
+							]
+						},
+						"description": "Sign out current user (requires authentication)"
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication endpoints"
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users"
+							]
+						},
+						"description": "Get all users (requires authentication)"
+					},
+					"response": []
+				},
+				{
+					"name": "Create User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('User created successfully', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data).to.have.property('id');",
+									"    pm.expect(response.data).to.have.property('email');",
+									"    pm.expect(response.data).to.not.have.property('password');",
+									"});",
+									"",
+									"console.log('✅ User created successfully');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"password123\",\n  \"phone\": \"1234567890\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users"
+							]
+						},
+						"description": "Create a new user"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"1"
+							]
+						},
+						"description": "Get user by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Smith\",\n  \"phone\": \"0987654321\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"1"
+							]
+						},
+						"description": "Update user by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"1"
+							]
+						},
+						"description": "Delete user by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by Email",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/users/email/admin@motor.com",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"email",
+								"admin@motor.com"
+							]
+						},
+						"description": "Get user by email address"
+					},
+					"response": []
+				}
+			],
+			"description": "User management endpoints"
+		},
+		{
+			"name": "Error Testing",
+			"item": [
+				{
+					"name": "401 - Unauthorized Access",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"profile"
+							]
+						},
+						"description": "Test unauthorized access (no token)"
+					},
+					"response": []
+				},
+				{
+					"name": "401 - Invalid Credentials",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"wrong@email.com\",\n  \"password\": \"wrongpassword\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/signin",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"signin"
+							]
+						},
+						"description": "Test invalid login credentials"
+					},
+					"response": []
+				},
+				{
+					"name": "422 - Validation Error",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"missing-password\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/signin",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"signin"
+							]
+						},
+						"description": "Test validation error (missing fields)"
+					},
+					"response": []
+				},
+				{
+					"name": "404 - Not Found",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/nonexistent",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"nonexistent"
+							]
+						},
+						"description": "Test 404 error for non-existent endpoint"
+					},
+					"response": []
+				}
+			],
+			"description": "Test error scenarios and status codes"
+		},
+		{
+			"name": "S3 File Management",
+			"item": [
+				{
+					"name": "Get Upload URL",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Upload URL response is valid', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data).to.have.property('uploadUrl');",
+									"    pm.expect(response.data).to.have.property('key');",
+									"    pm.expect(response.data).to.have.property('fileName');",
+									"    pm.expect(response.data).to.have.property('expiresIn');",
+									"});",
+									"",
+									"pm.test('File name is sanitized', function () {",
+									"    const response = pm.response.json();",
+									"    const fileName = response.data.fileName;",
+									"    // Should not contain spaces or special characters except dots, dashes, underscores",
+									"    pm.expect(fileName).to.match(/^[a-zA-Z0-9._-]+$/);",
+									"    // Should not start or end with dots or dashes",
+									"    pm.expect(fileName).to.not.match(/^[.-]|[.-]$/);",
+									"});",
+									"",
+									"// Save file key for later use",
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data.key) {",
+									"        pm.collectionVariables.set('s3FileKey', response.data.key);",
+									"        console.log('✅ S3 file key saved:', response.data.key);",
+									"        console.log('✅ Upload URL generated, expires in:', response.data.expiresIn, 'seconds');",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fileName\": \"test-document-{{$timestamp}}.pdf\",\n  \"contentType\": \"application/pdf\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/s3/upload-url",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"s3",
+								"upload-url"
+							]
+						},
+						"description": "Get pre-signed URL for PDF file upload"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Upload URL - File Name Sanitization",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Problematic file name is sanitized', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    const fileName = response.data.fileName;",
+									"    ",
+									"    // Should not contain spaces, special characters, or problematic chars",
+									"    pm.expect(fileName).to.match(/^[a-zA-Z0-9._-]+$/);",
+									"    pm.expect(fileName).to.not.include(' ');",
+									"    pm.expect(fileName).to.not.include('@');",
+									"    pm.expect(fileName).to.not.include('#');",
+									"    pm.expect(fileName).to.not.include('$');",
+									"    ",
+									"    console.log('Original: my file@name#with$spaces&symbols.pdf');",
+									"    console.log('Sanitized:', fileName);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fileName\": \"my file@name#with$spaces&symbols.pdf\",\n  \"contentType\": \"application/pdf\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/s3/upload-url",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"s3",
+								"upload-url"
+							]
+						},
+						"description": "Test file name sanitization with problematic characters including spaces, symbols, and special characters"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete File",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('File deleted successfully', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data.message).to.include('deleted successfully');",
+									"});",
+									"",
+									"console.log('✅ File deleted from S3');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/s3/file/{{s3FileKey}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"s3",
+								"file",
+								"{{s3FileKey}}"
+							]
+						},
+						"description": "Delete file from S3 bucket"
+					},
+					"response": []
+				},
+				{
+					"name": "Get File URL",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('File URL returned', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data).to.have.property('fileUrl');",
+									"    pm.expect(response.data.fileUrl).to.include('s3');",
+									"});",
+									"",
+									"console.log('✅ File URL retrieved');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/s3/file-url/{{s3FileKey}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"s3",
+								"file-url",
+								"{{s3FileKey}}"
+							]
+						},
+						"description": "Get public file URL"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Download URL",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Download URL returned', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data).to.have.property('downloadUrl');",
+									"    pm.expect(response.data.downloadUrl).to.include('amazonaws.com');",
+									"});",
+									"",
+									"console.log('✅ Download URL retrieved');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/s3/download-url/{{s3FileKey}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"s3",
+								"download-url",
+								"{{s3FileKey}}"
+							]
+						},
+						"description": "Get pre-signed download URL"
+					},
+					"response": []
+				}
+			],
+			"description": "S3 file upload and management endpoints"
+		},
+		{
+			"name": "Document Processing",
+			"item": [
+				{
+					"name": "Process PDF Document",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Document processing started', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data).to.have.property('document');",
+									"    pm.expect(response.data.document).to.have.property('id');",
+									"    pm.expect(response.data.document).to.have.property('processingStatus');",
+									"});",
+									"",
+									"// Save document ID for later use",
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data.document.id) {",
+									"        pm.collectionVariables.set('documentId', response.data.document.id);",
+									"        console.log('✅ Document ID saved:', response.data.document.id);",
+									"        console.log('✅ Processing status:', response.data.document.processingStatus);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"s3Key\": \"{{s3FileKey}}\",\n  \"fileName\": \"test-document-{{$timestamp}}.pdf\",\n  \"contentType\": \"application/pdf\",\n  \"fileSize\": 12345\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/documents/process",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"documents",
+								"process"
+							]
+						},
+						"description": "Process uploaded PDF document and create page-by-page embeddings. Note: The file must be actually uploaded to S3 using the pre-signed URL before calling this endpoint. Full text is not stored at document level, only page content in embeddings."
+					},
+					"response": []
+				},
+				{
+					"name": "Process Document - Non-existent File",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Error message contains S3 key info\", function () {",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson.message).to.include(\"does not exist\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{jwt_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"s3Key\": \"non-existent-file.pdf\",\n    \"fileName\": \"test-non-existent.pdf\",\n    \"contentType\": \"application/pdf\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/documents/process",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"documents",
+								"process"
+							]
+						},
+						"description": "Test error handling when trying to process a document that doesn't exist in S3. This should return a 400 error with appropriate message."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Documents",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Documents list returned', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data).to.have.property('documents');",
+									"    pm.expect(response.data).to.have.property('count');",
+									"    pm.expect(response.data.documents).to.be.an('array');",
+									"});",
+									"",
+									"console.log('✅ Documents retrieved, count:', pm.response.json().data.count);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/documents",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"documents"
+							]
+						},
+						"description": "Get all processed documents"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Document by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Document details returned', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data).to.have.property('document');",
+									"    pm.expect(response.data.document).to.have.property('id');",
+									"    pm.expect(response.data.document).to.have.property('name');",
+									"    pm.expect(response.data.document).to.have.property('s3Url');",
+									"    // Verify extractedText is not included (now stored only in embeddings)",
+									"    pm.expect(response.data.document).to.not.have.property('extractedText');",
+									"});",
+									"",
+									"console.log('✅ Document details retrieved');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/documents/{{documentId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"documents",
+								"{{documentId}}"
+							]
+						},
+						"description": "Get document by ID with embeddings"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Document Status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Document status returned', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data).to.have.property('processingStatus');",
+									"    pm.expect(response.data).to.have.property('totalPages');",
+									"    pm.expect(response.data).to.have.property('embeddingCount');",
+									"});",
+									"",
+									"const response = pm.response.json();",
+									"console.log('✅ Processing status:', response.data.processingStatus);",
+									"console.log('📄 Total pages:', response.data.totalPages);",
+									"console.log('🔗 Embedding count:', response.data.embeddingCount);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/documents/{{documentId}}/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"documents",
+								"{{documentId}}",
+								"status"
+							]
+						},
+						"description": "Get document processing status"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Document",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Document deleted successfully', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data).to.have.property('message');",
+									"    pm.expect(response.data).to.have.property('details');",
+									"    pm.expect(response.data.details).to.have.property('deletedEmbeddings');",
+									"    pm.expect(response.data.details).to.have.property('s3Deleted');",
+									"});",
+									"",
+									"const response = pm.response.json();",
+									"console.log('✅ Document deleted');",
+									"console.log('🗑️ Embeddings deleted:', response.data.details.deletedEmbeddings);",
+									"console.log('☁️ S3 deleted:', response.data.details.s3Deleted);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/documents/{{documentId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"documents",
+								"{{documentId}}"
+							]
+						},
+						"description": "Delete document from S3 and database with all embeddings"
+					},
+					"response": []
+				}
+			],
+			"description": "Document processing and management endpoints - processes PDF files, extracts text page-by-page, creates embeddings, and stores them efficiently without document-level text duplication"
+		},
+		{
+			"name": "Chat Management (RAG-Enabled)",
+			"item": [
+				{
+					"name": "Create New Chat with Query",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Chat created with RAG response', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data).to.have.property('chat');",
+									"    pm.expect(response.data).to.have.property('message');",
+									"    pm.expect(response.data.chat).to.have.property('id');",
+									"    pm.expect(response.data.chat).to.have.property('title');",
+									"    pm.expect(response.data.message).to.have.property('role', 'assistant');",
+									"});",
+									"",
+									"// Save chat ID for other tests",
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.success && response.data.chat.id) {",
+									"        pm.collectionVariables.set('chatId', response.data.chat.id);",
+									"        console.log('✅ Chat ID saved:', response.data.chat.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"query\": \"What are the key features mentioned in the uploaded documents?\",\n    \"title\": \"RAG Chat - {{$timestamp}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/chats",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"chats"
+							]
+						},
+						"description": "Create a new chat with initial query (RAG-enabled). Requires documents to be uploaded first."
+					},
+					"response": []
+				},
+				{
+					"name": "Send Query to Existing Chat",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Query processed with RAG response', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data).to.have.property('userMessage');",
+									"    pm.expect(response.data).to.have.property('assistantMessage');",
+									"    pm.expect(response.data).to.have.property('context');",
+									"    pm.expect(response.data.userMessage).to.have.property('role', 'user');",
+									"    pm.expect(response.data.assistantMessage).to.have.property('role', 'assistant');",
+									"    pm.expect(response.data.context).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"query\": \"What is the average end depth for 12.25 run?\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/chats/{{chatId}}/query",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"chats",
+								"{{chatId}}",
+								"query"
+							]
+						},
+						"description": "Send a query to an existing chat using RAG (Retrieval Augmented Generation)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Chats with Messages",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Chats list retrieved with messages', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data).to.have.property('chats');",
+									"    pm.expect(response.data).to.have.property('count');",
+									"    pm.expect(response.data.chats).to.be.an('array');",
+									"});",
+									"",
+									"pm.test('Chat data structure is correct', function () {",
+									"    const response = pm.response.json();",
+									"    if (response.data.chats.length > 0) {",
+									"        const chat = response.data.chats[0];",
+									"        pm.expect(chat).to.have.property('id');",
+									"        pm.expect(chat).to.have.property('title');",
+									"        pm.expect(chat).to.have.property('userId');",
+									"        pm.expect(chat).to.have.property('metadata');",
+									"        pm.expect(chat).to.have.property('createdAt');",
+									"        pm.expect(chat).to.have.property('updatedAt');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/chats?includeMessages=true",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"chats"
+							],
+							"query": [
+								{
+									"key": "includeMessages",
+									"value": "true",
+									"description": "Include chat messages in response"
+								}
+							]
+						},
+						"description": "Get all chats for the authenticated user with optional message history"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Chat by ID with Messages",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Chat retrieved with messages', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data).to.have.property('id');",
+									"    pm.expect(response.data).to.have.property('title');",
+									"    pm.expect(response.data).to.have.property('messages');",
+									"    pm.expect(response.data.messages).to.be.an('array');",
+									"    pm.expect(response.data.id).to.eql(pm.collectionVariables.get('chatId'));",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/chats/{{chatId}}?includeMessages=true",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"chats",
+								"{{chatId}}"
+							],
+							"query": [
+								{
+									"key": "includeMessages",
+									"value": "true",
+									"description": "Include chat messages in response"
+								}
+							]
+						},
+						"description": "Get a specific chat by ID with conversation history"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Chat Statistics",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Chat statistics retrieved', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data).to.have.property('totalChats');",
+									"    pm.expect(response.data).to.have.property('totalMessages');",
+									"    pm.expect(response.data).to.have.property('totalTokensUsed');",
+									"    pm.expect(response.data).to.have.property('averageMessagesPerChat');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/chats/stats",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"chats",
+								"stats"
+							]
+						},
+						"description": "Get chat statistics for the authenticated user"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Chat Title",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Chat updated successfully', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data).to.have.property('id');",
+									"    pm.expect(response.data.title).to.include('Updated');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Updated RAG Chat - {{$timestamp}}\",\n    \"description\": \"This chat has been updated via API\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/chats/{{chatId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"chats",
+								"{{chatId}}"
+							]
+						},
+						"description": "Update chat title and description"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Chat",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Chat deleted successfully', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.message).to.include('deleted');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/chats/{{chatId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"chats",
+								"{{chatId}}"
+							]
+						},
+						"description": "Delete a chat and all its messages"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Chat - Validation Error",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 400', function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test('Validation error returned', function () {",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.false;",
+									"    pm.expect(response.message).to.include('required');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"query\": \"\",\n    \"title\": \"This should fail validation\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/chats",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"chats"
+							]
+						},
+						"description": "Test validation error with empty query"
+					},
+					"response": []
+				}
+			],
+			"description": "RAG-enabled chat management endpoints for intelligent document-aware conversations"
+		},
+		{
+			"name": "Complete API Test Flow",
+			"item": [
+				{
+					"name": "1. Basic Health Check",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Server is running', function () {",
+									"    pm.response.to.have.status(200);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.status).to.eql('OK');",
+									"});",
+									"console.log('🏥 Basic health check passed');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"health"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. System Health Status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('System health check passes', function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 207]);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data.status).to.be.oneOf(['healthy', 'degraded']);",
+									"    pm.expect(response.data.services).to.be.an('array');",
+									"});",
+									"",
+									"pm.test('Critical services are operational', function () {",
+									"    const response = pm.response.json();",
+									"    const unhealthyServices = response.data.services.filter(s => s.status === 'unhealthy');",
+									"    pm.expect(unhealthyServices.length).to.equal(0, 'Unhealthy services: ' + JSON.stringify(unhealthyServices));",
+									"});",
+									"",
+									"console.log('🏥 System health status: ' + pm.response.json().data.status);",
+									"console.log('📊 Services monitored: ' + pm.response.json().data.services.length);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/health/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"health",
+								"status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. Database Health Check",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Database is healthy', function () {",
+									"    pm.response.to.have.status(200);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.expect(response.data.status).to.eql('healthy');",
+									"    pm.expect(response.data.responseTime).to.be.a('number');",
+									"});",
+									"console.log('💾 Database health check passed');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/health/database",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"health",
+								"database"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4. Sign In Admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Admin sign in successful', function () {",
+									"    pm.response.to.have.status(200);",
+									"    const response = pm.response.json();",
+									"    pm.expect(response.success).to.be.true;",
+									"    pm.collectionVariables.set('authToken', response.data.token);",
+									"});",
+									"console.log('🔐 Admin authenticated');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@motor.com\",\n  \"password\": \"admin123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/signin",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"signin"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "5. Get Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Profile retrieved', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"console.log('👤 Profile accessed');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"profile"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "6. Get S3 Upload URL",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Upload URL generated', function () {",
+									"    pm.response.to.have.status(200);",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('s3FileKey', response.data.key);",
+									"});",
+									"console.log('📤 S3 upload URL ready');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fileName\": \"test-document-{{$timestamp}}.pdf\",\n  \"contentType\": \"application/pdf\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/s3/upload-url",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"s3",
+								"upload-url"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "7. Process PDF Document",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Document processing started', function () {",
+									"    pm.response.to.have.status(201);",
+									"    const response = pm.response.json();",
+									"    pm.collectionVariables.set('documentId', response.data.document.id);",
+									"});",
+									"console.log('📄 Document processing initiated');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"s3Key\": \"{{s3FileKey}}\",\n  \"fileName\": \"test-document-{{$timestamp}}.pdf\",\n  \"contentType\": \"application/pdf\",\n  \"fileSize\": 12345\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/documents/process",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"documents",
+								"process"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "8. Check Document Status",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Document status retrieved', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"console.log('� Document status checked');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/documents/{{documentId}}/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"documents",
+								"{{documentId}}",
+								"status"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "9. Get All Documents",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Documents list retrieved', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"console.log('📚 Documents list retrieved');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/documents",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"documents"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "10. Sign Out",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Sign out successful', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"console.log('🚪 Signed out - token invalidated');"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/signout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"signout"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Complete test flow covering all major API endpoints - authentication, S3 file management, PDF document processing with page-based embeddings, and proper cleanup"
+		},
+		{
+			"name": "Health Check & System Monitoring",
+			"item": [
+				{
+					"name": "Basic Health Check",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has status OK\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql(\"OK\");",
+									"    pm.expect(jsonData.timestamp).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"health"
+							]
+						},
+						"description": "Basic health check endpoint - returns simple OK status"
+					},
+					"response": []
+				},
+				{
+					"name": "Comprehensive System Health",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200, 207, or 503\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 207, 503]);",
+									"});",
+									"",
+									"pm.test(\"Response has comprehensive health data\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.exist;",
+									"    pm.expect(jsonData.data).to.exist;",
+									"    pm.expect(jsonData.data.status).to.be.oneOf([\"healthy\", \"degraded\", \"unhealthy\"]);",
+									"    pm.expect(jsonData.data.services).to.be.an('array');",
+									"    pm.expect(jsonData.data.summary).to.exist;",
+									"    pm.expect(jsonData.data.timestamp).to.exist;",
+									"});",
+									"",
+									"pm.test(\"All services have required properties\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    jsonData.data.services.forEach(function(service) {",
+									"        pm.expect(service.service).to.exist;",
+									"        pm.expect(service.status).to.be.oneOf([\"healthy\", \"degraded\", \"unhealthy\"]);",
+									"        pm.expect(service.responseTime).to.be.a('number');",
+									"    });",
+									"});",
+									"",
+									"pm.test(\"Summary has correct totals\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var summary = jsonData.data.summary;",
+									"    pm.expect(summary.total).to.equal(summary.healthy + summary.degraded + summary.unhealthy);",
+									"    pm.expect(summary.total).to.equal(jsonData.data.services.length);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/health/status",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"health",
+								"status"
+							]
+						},
+						"description": "Comprehensive system health check covering all services - database, S3, LLM, embedding, document, chat, auth, user, and token blacklist services"
+					},
+					"response": []
+				},
+				{
+					"name": "Database Health",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Database health check response\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 503]);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.service).to.eql(\"Database\");",
+									"    pm.expect(jsonData.data.status).to.be.oneOf([\"healthy\", \"unhealthy\"]);",
+									"    pm.expect(jsonData.data.responseTime).to.be.a('number');",
+									"    if (jsonData.data.status === \"healthy\") {",
+									"        pm.expect(jsonData.data.details.dialect).to.exist;",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/health/database",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"health",
+								"database"
+							]
+						},
+						"description": "Check PostgreSQL database connectivity and status"
+					},
+					"response": []
+				},
+				{
+					"name": "S3 Service Health",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"S3 service health check response\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 503]);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.service).to.eql(\"S3\");",
+									"    pm.expect(jsonData.data.status).to.be.oneOf([\"healthy\", \"unhealthy\"]);",
+									"    pm.expect(jsonData.data.responseTime).to.be.a('number');",
+									"    if (jsonData.data.status === \"healthy\") {",
+									"        pm.expect(jsonData.data.details.bucketConfigured).to.be.a('boolean');",
+									"        pm.expect(jsonData.data.details.region).to.exist;",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/health/s3",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"health",
+								"s3"
+							]
+						},
+						"description": "Check AWS S3 service configuration and connectivity"
+					},
+					"response": []
+				},
+				{
+					"name": "LLM Service Health",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"LLM service health check response\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 503]);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.service).to.eql(\"LLM\");",
+									"    pm.expect(jsonData.data.status).to.be.oneOf([\"healthy\", \"unhealthy\"]);",
+									"    pm.expect(jsonData.data.responseTime).to.be.a('number');",
+									"    if (jsonData.data.status === \"healthy\") {",
+									"        pm.expect(jsonData.data.details.apiKeyConfigured).to.be.a('boolean');",
+									"        pm.expect(jsonData.data.details.model).to.exist;",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/health/llm",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"health",
+								"llm"
+							]
+						},
+						"description": "Check OpenAI LLM service configuration and status"
+					},
+					"response": []
+				},
+				{
+					"name": "Embedding Service Health",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Embedding service health check response\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 503]);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.service).to.eql(\"Embedding\");",
+									"    pm.expect(jsonData.data.status).to.be.oneOf([\"healthy\", \"unhealthy\"]);",
+									"    pm.expect(jsonData.data.responseTime).to.be.a('number');",
+									"    if (jsonData.data.status === \"healthy\") {",
+									"        pm.expect(jsonData.data.details.apiKeyConfigured).to.be.a('boolean');",
+									"        pm.expect(jsonData.data.details.model).to.exist;",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/health/embedding",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"health",
+								"embedding"
+							]
+						},
+						"description": "Check OpenAI embedding service configuration and status"
+					},
+					"response": []
+				},
+				{
+					"name": "Document Service Health",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Document service health check response\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 503]);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.service).to.eql(\"Document\");",
+									"    pm.expect(jsonData.data.status).to.be.oneOf([\"healthy\", \"unhealthy\"]);",
+									"    pm.expect(jsonData.data.responseTime).to.be.a('number');",
+									"    if (jsonData.data.status === \"healthy\") {",
+									"        pm.expect(jsonData.data.details.serviceInitialized).to.be.a('boolean');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/health/document",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"health",
+								"document"
+							]
+						},
+						"description": "Check document processing service status"
+					},
+					"response": []
+				},
+				{
+					"name": "Chat Service Health",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Chat service health check response\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 503]);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.service).to.eql(\"Chat\");",
+									"    pm.expect(jsonData.data.status).to.be.oneOf([\"healthy\", \"unhealthy\"]);",
+									"    pm.expect(jsonData.data.responseTime).to.be.a('number');",
+									"    if (jsonData.data.status === \"healthy\") {",
+									"        pm.expect(jsonData.data.details.serviceInitialized).to.be.a('boolean');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/health/chat",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"health",
+								"chat"
+							]
+						},
+						"description": "Check chat and RAG service status"
+					},
+					"response": []
+				},
+				{
+					"name": "Auth Service Health",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Auth service health check response\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 503]);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.service).to.eql(\"Auth\");",
+									"    pm.expect(jsonData.data.status).to.be.oneOf([\"healthy\", \"degraded\", \"unhealthy\"]);",
+									"    pm.expect(jsonData.data.responseTime).to.be.a('number');",
+									"    if (jsonData.data.status === \"healthy\" || jsonData.data.status === \"degraded\") {",
+									"        pm.expect(jsonData.data.details.serviceInitialized).to.be.a('boolean');",
+									"        pm.expect(jsonData.data.details.jwtSecretConfigured).to.be.a('boolean');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/health/auth",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"health",
+								"auth"
+							]
+						},
+						"description": "Check authentication service and JWT configuration status"
+					},
+					"response": []
+				},
+				{
+					"name": "User Service Health",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"User service health check response\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 503]);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.service).to.eql(\"User\");",
+									"    pm.expect(jsonData.data.status).to.be.oneOf([\"healthy\", \"unhealthy\"]);",
+									"    pm.expect(jsonData.data.responseTime).to.be.a('number');",
+									"    if (jsonData.data.status === \"healthy\") {",
+									"        pm.expect(jsonData.data.details.serviceAvailable).to.be.a('boolean');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/health/user",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"health",
+								"user"
+							]
+						},
+						"description": "Check user management service status"
+					},
+					"response": []
+				},
+				{
+					"name": "Token Blacklist Service Health",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Token blacklist service health check response\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 503]);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.service).to.eql(\"Token Blacklist\");",
+									"    pm.expect(jsonData.data.status).to.be.oneOf([\"healthy\", \"unhealthy\"]);",
+									"    pm.expect(jsonData.data.responseTime).to.be.a('number');",
+									"    if (jsonData.data.status === \"healthy\") {",
+									"        pm.expect(jsonData.data.details.serviceInitialized).to.be.a('boolean');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/health/token-blacklist",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"health",
+								"token-blacklist"
+							]
+						},
+						"description": "Check token blacklist security service status"
+					},
+					"response": []
+				}
+			],
+			"description": "Comprehensive health check and system monitoring endpoints - monitors all critical services including database, S3, OpenAI services, and application components"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "authToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "s3FileKey",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "documentId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "chatId",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
