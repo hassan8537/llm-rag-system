@@ -87,6 +87,7 @@ export class AuthController extends BaseController {
       lastName: user.lastName,
       fullName: user.fullName,
       phone: user.phone,
+      role: user.role || "user",
       isActive: user.isActive,
     }, 'Profile retrieved successfully');
   });

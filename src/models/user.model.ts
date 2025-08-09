@@ -11,10 +11,11 @@ import {
   Unique,
   IsEmail,
   Length,
-} from 'sequelize-typescript';
+  Default,
+} from "sequelize-typescript";
 
 @Table({
-  tableName: 'users',
+  tableName: "users",
   timestamps: true,
 })
 export class User extends Model {
@@ -48,6 +49,11 @@ export class User extends Model {
   @Length({ min: 10, max: 15 })
   @Column(DataType.STRING)
   phone?: string;
+
+  @AllowNull(true)
+  @Default("user")
+  @Column(DataType.ENUM("admin", "user"))
+  role?: string;
 
   @AllowNull(false)
   @Column(DataType.BOOLEAN)

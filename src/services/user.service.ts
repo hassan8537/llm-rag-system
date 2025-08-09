@@ -1,21 +1,26 @@
-import { User } from '../models/user.model';
-import { CreateUserDto, UpdateUserDto, UserResponse } from '../types/user.types';
-import bcrypt from 'bcryptjs';
+import { User } from "../models/user.model";
+import {
+  CreateUserDto,
+  UpdateUserDto,
+  UserResponse,
+} from "../types/user.types";
+import bcrypt from "bcryptjs";
 
 export class UserService {
-  
   /**
    * Create a new user
    */
-  public static async createUser(userData: CreateUserDto): Promise<UserResponse> {
+  public static async createUser(
+    userData: CreateUserDto
+  ): Promise<UserResponse> {
     try {
       // Check if user already exists
       const existingUser = await User.findByEmail(userData.email);
       if (existingUser) {
         return {
           success: false,
-          error: 'User already exists with this email',
-          message: 'Failed to create user',
+          error: "User already exists with this email",
+          message: "Failed to create user",
         };
       }
 
@@ -28,6 +33,7 @@ export class UserService {
         email: userData.email,
         password: hashedPassword,
         phone: userData.phone,
+        role: userData.role ?? "user",
         isActive: userData.isActive ?? true,
       });
 
@@ -38,6 +44,7 @@ export class UserService {
         lastName: user.lastName,
         email: user.email,
         phone: user.phone,
+        role: user.role || "user",
         isActive: user.isActive,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
@@ -46,13 +53,13 @@ export class UserService {
       return {
         success: true,
         data: userResponse,
-        message: 'User created successfully',
+        message: "User created successfully",
       };
     } catch (error: any) {
       return {
         success: false,
         error: error.message,
-        message: 'Failed to create user',
+        message: "Failed to create user",
       };
     }
   }
@@ -63,19 +70,19 @@ export class UserService {
   public static async getAllUsers(): Promise<UserResponse> {
     try {
       const users = await User.findAll({
-        order: [['createdAt', 'DESC']],
+        order: [["createdAt", "DESC"]],
       });
 
       return {
         success: true,
         data: users,
-        message: 'Users retrieved successfully',
+        message: "Users retrieved successfully",
       };
     } catch (error: any) {
       return {
         success: false,
         error: error.message,
-        message: 'Failed to retrieve users',
+        message: "Failed to retrieve users",
       };
     }
   }
@@ -90,20 +97,20 @@ export class UserService {
       if (!user) {
         return {
           success: false,
-          message: 'User not found',
+          message: "User not found",
         };
       }
 
       return {
         success: true,
         data: user,
-        message: 'User retrieved successfully',
+        message: "User retrieved successfully",
       };
     } catch (error: any) {
       return {
         success: false,
         error: error.message,
-        message: 'Failed to retrieve user',
+        message: "Failed to retrieve user",
       };
     }
   }
@@ -118,20 +125,20 @@ export class UserService {
       if (!user) {
         return {
           success: false,
-          message: 'User not found',
+          message: "User not found",
         };
       }
 
       return {
         success: true,
         data: user,
-        message: 'User retrieved successfully',
+        message: "User retrieved successfully",
       };
     } catch (error: any) {
       return {
         success: false,
         error: error.message,
-        message: 'Failed to retrieve user',
+        message: "Failed to retrieve user",
       };
     }
   }
@@ -139,14 +146,17 @@ export class UserService {
   /**
    * Update user
    */
-  public static async updateUser(id: number, userData: UpdateUserDto): Promise<UserResponse> {
+  public static async updateUser(
+    id: number,
+    userData: UpdateUserDto
+  ): Promise<UserResponse> {
     try {
       const user = await User.findByPk(id);
 
       if (!user) {
         return {
           success: false,
-          message: 'User not found',
+          message: "User not found",
         };
       }
 
@@ -155,13 +165,13 @@ export class UserService {
       return {
         success: true,
         data: user,
-        message: 'User updated successfully',
+        message: "User updated successfully",
       };
     } catch (error: any) {
       return {
         success: false,
         error: error.message,
-        message: 'Failed to update user',
+        message: "Failed to update user",
       };
     }
   }
@@ -176,7 +186,7 @@ export class UserService {
       if (!user) {
         return {
           success: false,
-          message: 'User not found',
+          message: "User not found",
         };
       }
 
@@ -184,13 +194,13 @@ export class UserService {
 
       return {
         success: true,
-        message: 'User deleted successfully',
+        message: "User deleted successfully",
       };
     } catch (error: any) {
       return {
         success: false,
         error: error.message,
-        message: 'Failed to delete user',
+        message: "Failed to delete user",
       };
     }
   }
@@ -205,7 +215,7 @@ export class UserService {
       if (!user) {
         return {
           success: false,
-          message: 'User not found',
+          message: "User not found",
         };
       }
 
@@ -214,13 +224,13 @@ export class UserService {
       return {
         success: true,
         data: user,
-        message: 'User deactivated successfully',
+        message: "User deactivated successfully",
       };
     } catch (error: any) {
       return {
         success: false,
         error: error.message,
-        message: 'Failed to deactivate user',
+        message: "Failed to deactivate user",
       };
     }
   }
