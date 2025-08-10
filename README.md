@@ -1,6 +1,6 @@
-# Motor Backend API
+# RAG App Backend
 
-A **TypeScript** backend application built with **Express.js**, **PostgreSQL**, and **Sequelize ORM**.
+A **TypeScript** backend application built with **Express.js**, **PostgreSQL**, **OpenAI**, and **Sequelize ORM**.
 
 ---
 
@@ -216,3 +216,4 @@ await user.destroy();
 
 ## 📄 License
 This project is licensed under the **MIT License**.
+
